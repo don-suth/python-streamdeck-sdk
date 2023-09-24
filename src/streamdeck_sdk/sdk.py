@@ -239,7 +239,10 @@ class StreamDeck(Base):
 			try:
 				async for message in websocket:
 					await self.__handle_ws_message(message)
-			except websockets.ConnectionClosed:
+			except websockets.ConnectionClosed as closed_connection:
+				logger.info("Connection closed.")
+				logger.debug(f"{closed_connection.recv.code=} {closed_connection.recv.reason=}")
+				logger.info("Attempting to reconnect...")
 				continue
 
 
