@@ -49,7 +49,7 @@ def fill_event_routing_map() -> None:
 	for event_handler_mixin, event_routing_obj_type in (
 			(mixins.ActionEventHandlersMixin, EventRoutingObjTypes.ACTION),
 			(mixins.PluginEventHandlersMixin, EventRoutingObjTypes.PLUGIN),
-	):
+		):
 		fill_routing_map(
 			routing_map=EVENT_ROUTING_MAP,
 			event_handler_mixin=event_handler_mixin,

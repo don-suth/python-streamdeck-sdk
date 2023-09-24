@@ -62,7 +62,7 @@ class StreamDeck(Base):
 				log_level=log_level,
 				log_max_bytes=log_max_bytes,
 				log_backup_count=log_backup_count,
-			)
+				)
 
 		self.actions_list: Optional[List[Action]] = actions
 		self.actions: Dict[str, Action] = {}
@@ -84,7 +84,7 @@ class StreamDeck(Base):
 
 		parser = argparse.ArgumentParser(
 			description="Streamdeck Plugin",
-		)
+			)
 		parser.add_argument('-port', dest='port', type=int, help="Port", required=True)
 		parser.add_argument('-pluginUUID', dest='pluginUUID', type=str, help="PluginUUID", required=True)
 		parser.add_argument('-registerEvent', dest='registerEvent', type=str, help="RegisterEvent", required=True)
