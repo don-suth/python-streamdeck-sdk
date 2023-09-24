@@ -29,6 +29,10 @@ class Base(
 
 
 class Action(Base):
+	"""
+	Base Action class.
+	Subclass this, set a UUID, and override the handler methods to get going!
+	"""
 	UUID: str
 
 	def __init__(self):
@@ -38,6 +42,10 @@ class Action(Base):
 
 
 class StreamDeck(Base):
+	"""
+	Main class for handling the plugin.
+	Initialise with a list of actions.
+	"""
 	def __init__(
 			self,
 			actions: Optional[List[Action]],
@@ -70,6 +78,9 @@ class StreamDeck(Base):
 
 	@log_errors_async
 	async def run(self) -> None:
+		"""
+		Main entrypoint for your plugin.
+		"""
 		logger.debug("Plugin has been started")
 
 		parser = argparse.ArgumentParser(
@@ -98,6 +109,10 @@ class StreamDeck(Base):
 		self.websocket_client_task = asyncio.create_task(self.__start_ws_connection())
 
 	def __init_actions(self) -> None:
+		"""
+		Helper function to initialise the actions.
+		Run once, when the plugin starts.
+		"""
 		if self.actions_list is None:
 			return
 
@@ -119,6 +134,11 @@ class StreamDeck(Base):
 			self,
 			message: str,
 			) -> None:
+		"""
+		Handles communication from the Streamdeck software,
+		constructs the relevant objects, and routes them to
+		the appropriate Plugin/Action event handlers.
+		"""
 		message_dict = json.loads(message)
 		logger.debug(f"{message_dict=}")
 
@@ -146,6 +166,10 @@ class StreamDeck(Base):
 			event_routing: event_routings.EventRoutingObj,
 			obj: pydantic.BaseModel
 			) -> None:
+		"""
+		If the plugin itself is listening for any events,
+		this routes them there.
+		"""
 		try:
 			handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(self, event_routing.handler_name)
 		except AttributeError as err:
@@ -159,6 +183,10 @@ class StreamDeck(Base):
 			event_routing: event_routings.EventRoutingObj,
 			obj: pydantic.BaseModel,
 			) -> None:
+		"""
+		If the Streamdeck message is for a particular Action,
+		then this routes it to the appropriate event handler.
+		"""
 		try:
 			action_uuid = getattr(obj, "action")
 		except AttributeError as err:
@@ -184,6 +212,10 @@ class StreamDeck(Base):
 			event_routing: event_routings.EventRoutingObj,
 			obj: pydantic.BaseModel,
 			) -> None:
+		"""
+		If any Actions are listening for any Plugin events, this
+		will route them to the appropriate event handler.
+		"""
 		for action_obj in self.actions.values():
 			try:
 				handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
@@ -194,6 +226,11 @@ class StreamDeck(Base):
 
 	@log_errors_async
 	async def __start_ws_connection(self) -> None:
+		"""
+		Opens the Websocket connection to the Streamdeck software,
+		and starts listening for events.
+		Automatically tries to reconnect in the event the connection closes.
+		"""
 		ws_uri = f"ws://localhost:{self.port}"
 		async for websocket in websockets.connect(ws_uri):
 			logger.debug("Websocket opened")
