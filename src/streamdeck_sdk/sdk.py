@@ -13,7 +13,7 @@ from . import mixins
 from . import event_routings
 from .sd_objs import registration_objs
 from .logger import init_root_logger
-from .logger import log_errors, log_errors_async
+from .logger import log_errors_async
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,8 @@ class StreamDeck(Base):
 		self.plugin_uuid: Optional[str] = None
 		self.register_event: Optional[str] = None
 		self.info: Optional[registration_objs.Info] = None
-
 		self.registration_dict: Optional[dict] = None
+		self.websocket_client_task: Optional[asyncio.Task] = None
 
 	@log_errors_async
 	async def run(self) -> None:
@@ -93,7 +93,9 @@ class StreamDeck(Base):
 		self.registration_dict = {"event": self.register_event, "uuid": self.plugin_uuid}
 		logger.debug(f"{self.registration_dict=}")
 
-		# Open the websocket here.
+		self.__init_actions()
+
+		self.websocket_client_task = asyncio.create_task(self.__start_ws_connection())
 
 	def __init_actions(self) -> None:
 		if self.actions_list is None:
@@ -194,6 +196,8 @@ class StreamDeck(Base):
 	async def __start_ws_connection(self) -> None:
 		ws_uri = f"ws://localhost:{self.port}"
 		async for websocket in websockets.connect(ws_uri):
+			logger.debug("Websocket opened")
+			await self.send(self.registration_dict)
 			try:
 				async for message in websocket:
 					await self.__handle_ws_message(message)
