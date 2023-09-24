@@ -233,6 +233,7 @@ class StreamDeck(Base):
 		"""
 		ws_uri = f"ws://localhost:{self.port}"
 		async for websocket in websockets.connect(ws_uri):
+			self.ws = websocket
 			logger.debug("Websocket opened")
 			await self.send(self.registration_dict)
 			try:
