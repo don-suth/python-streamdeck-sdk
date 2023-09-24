@@ -218,7 +218,7 @@ class ActionEventHandlersMixin(BaseEventHandlerMixin):
 	async def on_dial_press(self, obj: events_received_objs.DialPress) -> None:
 		pass
 
-	def on_dial_rotate(self, obj: events_received_objs.DialRotate) -> None:
+	async def on_dial_rotate(self, obj: events_received_objs.DialRotate) -> None:
 		pass
 
 	async def on_will_appear(self, obj: events_received_objs.WillAppear) -> None:

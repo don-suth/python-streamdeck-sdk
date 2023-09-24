@@ -36,7 +36,7 @@ def fill_routing_map(
 		handler_type_hints = get_type_hints(value)
 		obj_type = handler_type_hints["obj"]
 		obj = obj_type.model_construct()
-		event_name = obj.name
+		event_name = obj.event
 		handler_name = value.__name__
 		routing_map[event_name] = EventRoutingObj(
 			handler_name=handler_name,
