@@ -30,7 +30,7 @@ class Action(Base):
 	def __init__(self):
 		self.plugin_uuid: Optional[str] = None
 		self.ws: Optional[websockets.WebSocketClientProtocol] = None
-		self.info: Optional[registration_objs.Info]
+		self.info: Optional[registration_objs.Info] = None
 
 
 class StreamDeck(Base):
@@ -84,5 +84,50 @@ class StreamDeck(Base):
 		logger.debug(f"{self.register_event=}")
 		self.info: registration_objs.Info = registration_objs.Info.model_validate(json.loads(args.info))
 		logger.debug(f"{self.info=}")
+
+		self.registration_dict = {"event": self.register_event, "uuid": self.plugin_uuid}
+		logger.debug(f"{self.registration_dict=}")
+
+		# Open the websocket here.
+
+	def __init_actions(self) -> None:
+		if self.actions_list is None:
+			return
+
+		for action in self.actions_list:
+			try:
+				action_uuid = action.UUID
+			except AttributeError as exception:
+				action_class = str(action.__class__)
+				error_message = f"{action_class} must have attribute UUID"
+				logger.error(error_message, exc_info=True)
+				raise AttributeError(error_message) from exception
+			action.ws = self.ws
+			action.plugin_uuid = self.plugin_uuid
+			action.info = self.info
+			self.actions[action_uuid] = action
+
+	async def __handle_ws_message(
+			self,
+			message: str,
+			) -> None:
+		message_dict = json.loads(message)
+		logger.debug(f"{message_dict=}")
+
+		# Route the message to the appropriate handle.
+		event_routing = None  # event_routings.EVENT_ROUTING_MAP.get(event)
+		if event_routing is None:
+			logger.warning("event_routing is None")
+			return
+
+	async def __start_ws_connection(self) -> None:
+		ws_uri = f"ws://localhost:{self.port}"
+		async for websocket in websockets.connect(ws_uri):
+			try:
+				async for message in websocket:
+					await self.__handle_ws_message(message)
+			except websockets.ConnectionClosed:
+				continue
+
 
 
