@@ -1,19 +1,18 @@
+import argparse
+import asyncio
 import json
-from pathlib import Path
 import logging
+from pathlib import Path
+from typing import Optional, List, Dict, Callable, Awaitable
 
 import pydantic
 import websockets
-import asyncio
-import argparse
 
-from typing import Optional, List, Dict, Callable, Awaitable
-
-from . import mixins
 from . import event_routings
-from .sd_objs import registration_objs
+from . import mixins
 from .logger import init_root_logger
 from .logger import log_errors_async
+from .sd_objs import registration_objs
 
 logger = logging.getLogger(__name__)
 

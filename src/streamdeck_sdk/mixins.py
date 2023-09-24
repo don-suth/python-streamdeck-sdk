@@ -1,10 +1,10 @@
 import json
-import websockets
 
 import pydantic
+import websockets
 
-from .sd_objs import events_received_objs, events_sent_objs
 from .logger import log_errors_async
+from .sd_objs import events_received_objs, events_sent_objs
 
 
 class SendMixin:

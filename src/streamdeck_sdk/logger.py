@@ -1,12 +1,9 @@
 import logging
-import inspect
 from logging.handlers import RotatingFileHandler
 
 from pathlib import Path
 
-from decohints import decohints
-
-from functools import wraps, update_wrapper
+from functools import wraps
 
 _root_logger: logging.Logger = logging.getLogger()
 _log_errors_decorator_logger = logging.getLogger("log_errors_decorator")
