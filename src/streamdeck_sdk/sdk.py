@@ -2,17 +2,21 @@ import json
 from pathlib import Path
 import logging
 
+import pydantic
 import websockets
 import asyncio
 import argparse
 
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Callable, Awaitable
 
 from . import mixins
+from . import event_routings
 from .sd_objs import registration_objs
 from .logger import init_root_logger
+from .logger import log_errors, log_errors_async
 
 logger = logging.getLogger(__name__)
+
 
 class Base(
 		mixins.PluginEventHandlersMixin,
@@ -64,6 +68,7 @@ class StreamDeck(Base):
 
 		self.registration_dict: Optional[dict] = None
 
+	@log_errors_async
 	async def run(self) -> None:
 		logger.debug("Plugin has been started")
 
@@ -107,6 +112,7 @@ class StreamDeck(Base):
 			action.info = self.info
 			self.actions[action_uuid] = action
 
+	@log_errors_async
 	async def __handle_ws_message(
 			self,
 			message: str,
@@ -115,11 +121,76 @@ class StreamDeck(Base):
 		logger.debug(f"{message_dict=}")
 
 		# Route the message to the appropriate handle.
-		event_routing = None  # event_routings.EVENT_ROUTING_MAP.get(event)
+		event = message_dict["event"]
+		logger.debug(f"{event=}")
+
+		event_routing = event_routings.EVENT_ROUTING_MAP.get(event)
 		if event_routing is None:
 			logger.warning("event_routing is None")
 			return
 
+		obj = event_routing.obj_type.model_validate(message_dict)
+		logger.debug(f"{obj=}")
+
+		await self.route_event_in_plugin_handler(event_routing=event_routing, obj=obj)
+		if event_routing.type == event_routings.EventRoutingObjTypes.ACTION:
+			await self.route_action_event_in_action_handler(event_routing=event_routing, obj=obj)
+		elif event_routing.type == event_routings.EventRoutingObjTypes.PLUGIN:
+			await self.route_plugin_event_in_action_handlers(event_routing=event_routing, obj=obj)
+
+	@log_errors_async
+	async def route_event_in_plugin_handler(
+			self,
+			event_routing: event_routings.EventRoutingObj,
+			obj: pydantic.BaseModel
+			) -> None:
+		try:
+			handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(self, event_routing.handler_name)
+		except AttributeError as err:
+			logger.error(f"Handler missing: {str(err)}", exc_info=True)
+			return
+		await handler(obj)
+
+	@log_errors_async
+	async def route_action_event_in_action_handler(
+			self,
+			event_routing: event_routings.EventRoutingObj,
+			obj: pydantic.BaseModel,
+			) -> None:
+		try:
+			action_uuid = getattr(obj, "action")
+		except AttributeError as err:
+			logger.error(f"Action UUID is missing: {str(err)}", exc_info=True)
+			return
+
+		action_obj = self.actions.get(action_uuid)
+		if action_obj is None:
+			logger.warning(f"{action_uuid=} not registered.")
+			return
+
+		try:
+			handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
+		except AttributeError as err:
+			logger.error(f"Handler missing: {str(err)}", exc_info=True)
+			return
+
+		await handler(obj)
+
+	@log_errors_async
+	async def route_plugin_event_in_action_handlers(
+			self,
+			event_routing: event_routings.EventRoutingObj,
+			obj: pydantic.BaseModel,
+			) -> None:
+		for action_obj in self.actions.values():
+			try:
+				handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
+			except AttributeError as err:
+				logger.error(f"Handler missing: {str(err)}", exc_info=True)
+				return
+			await handler(obj)
+
+	@log_errors_async
 	async def __start_ws_connection(self) -> None:
 		ws_uri = f"ws://localhost:{self.port}"
 		async for websocket in websockets.connect(ws_uri):

@@ -4,11 +4,13 @@ import websockets
 import pydantic
 
 from .sd_objs import events_received_objs, events_sent_objs
+from .logger import log_errors_async
 
 
 class SendMixin:
 	ws: websockets.WebSocketClientProtocol
 
+	@log_errors_async
 	async def send(
 			self,
 			data: dict | str | pydantic.BaseModel

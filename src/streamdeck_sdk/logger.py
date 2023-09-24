@@ -1,9 +1,12 @@
 import logging
+import inspect
 from logging.handlers import RotatingFileHandler
 
 from pathlib import Path
 
 from decohints import decohints
+
+from functools import wraps, update_wrapper
 
 _root_logger: logging.Logger = logging.getLogger()
 _log_errors_decorator_logger = logging.getLogger("log_errors_decorator")
@@ -37,3 +40,28 @@ def init_root_logger(
 	rfh.setFormatter(formatter)
 	_root_logger.addHandler(rfh)
 
+
+def log_errors(func):
+	@wraps(func)
+	def wrapper(*args, **kwargs):
+		try:
+			result = func(*args, **kwargs)
+		except BaseException as err:
+			_log_errors_decorator_logger.error(str(err), exc_info=True)
+			return
+		return result
+	wrapper: func
+	return wrapper
+
+
+def log_errors_async(func):
+	@wraps(func)
+	async def wrapper(*args, **kwargs):
+		try:
+			result = await func(*args, **kwargs)
+		except BaseException as err:
+			_log_errors_decorator_logger.error(str(err), exc_info=True)
+			return
+		return result
+	wrapper: func
+	return wrapper
