@@ -2,9 +2,12 @@ import json
 
 import pydantic
 import websockets
+import logging
 
 from .logger import log_errors_async
 from .sd_objs import events_received_objs, events_sent_objs
+
+logger = logging.getLogger()
 
 
 class SendMixin:
@@ -19,11 +22,15 @@ class SendMixin:
 			# Convert the data into a JSON string.
 			case dict(data):
 				data = json.dumps(data, ensure_ascii=False)
-			case pydantic.BaseModel:
-				data = data.model_dump_json()
-			case _:
+			case str(data):
 				# Leave strings as they are.
 				pass
+			case basemodel if isinstance(basemodel, pydantic.BaseModel):
+				data = basemodel.model_dump_json()
+			case _:
+				logger.error(f"Attempted to send invalid {data=}")
+				return
+		logger.debug(f"{data=}")
 		await self.ws.send(data)
 
 
