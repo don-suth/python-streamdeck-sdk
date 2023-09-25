@@ -103,8 +103,6 @@ class StreamDeck(Base):
 		self.registration_dict = {"event": self.register_event, "uuid": self.plugin_uuid}
 		logger.debug(f"{self.registration_dict=}")
 
-		self.__init_actions()
-
 		await self.__start_ws_connection()
 
 	def __init_actions(self) -> None:
@@ -234,6 +232,7 @@ class StreamDeck(Base):
 		async for websocket in websockets.connect(ws_uri):
 			self.ws = websocket
 			logger.debug("Websocket opened")
+			self.__init_actions()
 			await self.send(self.registration_dict)
 			try:
 				async for message in websocket:
