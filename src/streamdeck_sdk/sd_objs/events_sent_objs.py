@@ -15,13 +15,13 @@ class LogMessagePayload(BaseModel):
 class SetTitlePayload(BaseModel):
 	title: str
 	target: int
-	state: Optional[int]
+	state: Optional[int] = None
 
 
 class SetImagePayload(BaseModel):
 	image: str  # base64
 	target: int
-	state: Optional[int]
+	state: Optional[int] = None
 
 
 class SetStatePayload(BaseModel):

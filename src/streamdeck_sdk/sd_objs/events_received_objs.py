@@ -17,40 +17,40 @@ class KeyCoordinates(BaseModel):
 
 class KeyDownPayload(BaseModel):
 	settings: dict
-	coordinates: Optional[KeyCoordinates]
-	state: Optional[int]
-	userDesiredState: Optional[int]
+	coordinates: Optional[KeyCoordinates] = None
+	state: Optional[int] = None
+	userDesiredState: Optional[int] = None
 	isInMultiAction: bool
 
 
 class KeyUpPayload(BaseModel):
 	settings: dict
-	coordinates: Optional[KeyCoordinates]
-	state: Optional[int]
-	userDesiredState: Optional[int]
+	coordinates: Optional[KeyCoordinates] = None
+	state: Optional[int] = None
+	userDesiredState: Optional[int] = None
 	isInMultiAction: bool
 
 
 class WillAppearPayload(BaseModel):
 	settings: dict
-	coordinates: Optional[KeyCoordinates]
-	state: Optional[int]
+	coordinates: Optional[KeyCoordinates] = None
+	state: Optional[int] = None
 	isInMultiAction: bool
-	controller: Optional[ControllerEnum]
+	controller: Optional[ControllerEnum] = None
 
 
 class WillDisappearPayload(BaseModel):
 	settings: dict
-	coordinates: Optional[KeyCoordinates]
-	state: Optional[int]
+	coordinates: Optional[KeyCoordinates] = None
+	state: Optional[int] = None
 	isInMultiAction: bool
-	controller: Optional[ControllerEnum]
+	controller: Optional[ControllerEnum] = None
 
 
 class DidReceiveSettingsPayload(BaseModel):
 	settings: dict
 	coordinates: KeyCoordinates
-	state: Optional[int]
+	state: Optional[int] = None
 	isInMultiAction: bool
 
 

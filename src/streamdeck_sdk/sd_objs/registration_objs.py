@@ -18,12 +18,12 @@ class InfoPlugin(BaseModel):
 
 
 class InfoColors(BaseModel):
-	buttonPressedBackgroundColor: str
-	buttonPressedBorderColor: str
-	buttonPressedTextColor: str
-	disabledColor: Optional[str]
-	highlightColor: str
-	mouseDownColor: Optional[str]
+	buttonPressedBackgroundColor: Optional[str] = None
+	buttonPressedBorderColor: Optional[str] = None
+	buttonPressedTextColor: Optional[str] = None
+	disabledColor: Optional[str] = None
+	highlightColor: Optional[str] = None
+	mouseDownColor: Optional[str] = None
 
 
 class InfoDeviceSize(BaseModel):
