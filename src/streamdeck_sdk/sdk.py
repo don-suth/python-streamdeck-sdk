@@ -105,7 +105,7 @@ class StreamDeck(Base):
 
 		self.__init_actions()
 
-		self.websocket_client_task = asyncio.create_task(self.__start_ws_connection())
+		await self.__start_ws_connection()
 
 	def __init_actions(self) -> None:
 		"""
