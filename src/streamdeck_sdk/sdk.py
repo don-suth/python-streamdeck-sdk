@@ -242,6 +242,3 @@ class StreamDeck(Base):
 				logger.debug(f"{closed_connection.recv.code=} {closed_connection.recv.reason=}")
 				logger.info("Attempting to reconnect...")
 				continue
-
-
-
