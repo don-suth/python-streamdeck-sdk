@@ -226,7 +226,6 @@ class StreamDeck(Base):
 		"""
 		Opens the Websocket connection to the Streamdeck software,
 		and starts listening for events.
-		Automatically tries to reconnect in the event the connection closes.
 		"""
 		ws_uri = f"ws://localhost:{self.port}"
 		async for websocket in websockets.connect(ws_uri):
@@ -238,7 +237,6 @@ class StreamDeck(Base):
 				async for message in websocket:
 					await self.__handle_ws_message(message)
 			except websockets.ConnectionClosed as closed_connection:
-				logger.info("Connection closed.")
+				logger.info("Connection closed. Shutting down.")
 				logger.debug(f"{closed_connection.recv.code=} {closed_connection.recv.reason=}")
-				logger.info("Attempting to reconnect...")
-				continue
+				return
