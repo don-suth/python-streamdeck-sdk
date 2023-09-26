@@ -10,8 +10,7 @@ import websockets
 
 from . import event_routings
 from . import mixins
-from .logger import init_root_logger
-from .logger import log_errors_async
+from .logger import init_root_logger, log_errors_async, rename_plugin_logger
 from .sd_objs import registration_objs
 
 logger = logging.getLogger(__name__)
@@ -90,6 +89,8 @@ class StreamDeck(Base):
 		parser.add_argument('-registerEvent', dest='registerEvent', type=str, help="RegisterEvent", required=True)
 		parser.add_argument('-info', dest='info', type=str, help="Info", required=True)
 		args = parser.parse_args()
+
+		rename_plugin_logger(self.info.plugin.uuid)
 
 		self.port: int = args.port
 		logger.debug(f"{self.port=}")

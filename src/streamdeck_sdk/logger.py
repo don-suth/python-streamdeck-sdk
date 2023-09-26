@@ -62,3 +62,12 @@ def log_errors_async(func):
 		return result
 	wrapper: func
 	return wrapper
+
+
+def rename_plugin_logger(name: str) -> None:
+	"""Sets the name of the plugin logger to something more descriptive than "streamdeck_plugin"
+
+	Args:
+		name: What to set the name to. Usually the name of your plugin.
+	"""
+	logger.name = name
