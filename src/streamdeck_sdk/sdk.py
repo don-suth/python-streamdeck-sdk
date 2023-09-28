@@ -72,7 +72,6 @@ class StreamDeck(Base):
 		self.register_event: Optional[str] = None
 		self.info: Optional[registration_objs.Info] = None
 		self.registration_dict: Optional[dict] = None
-		self.websocket_client_task: Optional[asyncio.Task] = None
 
 	@log_errors_async
 	async def run(self) -> None:
