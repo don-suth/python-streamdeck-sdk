@@ -18,6 +18,11 @@ class SendMixin:
 			self,
 			data: dict | str | pydantic.BaseModel
 			) -> None:
+		"""Send data to the Streamdeck API
+
+		Args:
+			data: The data to send.
+		"""
 		match data:
 			# Convert the data into a JSON string.
 			case dict(data):
@@ -42,6 +47,11 @@ class PluginEventsSendMixin(BaseEventSendMixin):
 	plugin_uuid: str
 
 	async def set_global_settings(self, payload: dict) -> None:
+		"""Set the global settings. All Actions can access this setting.
+
+		Args:
+			payload: dict(JSON) of settings to set.
+		"""
 		message = events_sent_objs.SetGlobalSettings(
 			context=self.plugin_uuid,
 			payload=payload,
@@ -49,6 +59,8 @@ class PluginEventsSendMixin(BaseEventSendMixin):
 		await self.send(message)
 
 	async def get_global_settings(self) -> None:
+		"""Get the global settings.
+		"""
 		message = events_sent_objs.GetGlobalSettings(
 			context=self.plugin_uuid,
 			)
