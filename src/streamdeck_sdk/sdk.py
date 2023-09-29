@@ -64,7 +64,7 @@ class StreamDeck(Base):
 				)
 
 		self.actions_list: List[Action] = actions
-		self.actions: Dict[str, Action] = {}
+		self.registered_actions: Dict[str, Action] = {}
 
 		self.ws: Optional[websockets.WebSocketClientProtocol] = None
 		self.port: Optional[int] = None
@@ -124,7 +124,7 @@ class StreamDeck(Base):
 			action.ws = self.ws
 			action.plugin_uuid = self.plugin_uuid
 			action.info = self.info
-			self.actions[action_uuid] = action
+			self.registered_actions[action_uuid] = action
 
 	@log_errors_async
 	async def __handle_ws_message(
@@ -190,7 +190,7 @@ class StreamDeck(Base):
 			logger.error(f"Action UUID is missing: {str(err)}", exc_info=True)
 			return
 
-		action_obj = self.actions.get(action_uuid)
+		action_obj = self.registered_actions.get(action_uuid)
 		if action_obj is None:
 			logger.warning(f"{action_uuid=} not registered.")
 			return
@@ -213,7 +213,7 @@ class StreamDeck(Base):
 		If any Actions are listening for any Plugin events, this
 		will route them to the appropriate event handler.
 		"""
-		for action_obj in self.actions.values():
+		for action_obj in self.registered_actions.values():
 			try:
 				handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
 			except AttributeError as err:
