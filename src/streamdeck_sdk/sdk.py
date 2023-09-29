@@ -46,7 +46,7 @@ class StreamDeck(Base):
 	"""
 	def __init__(
 			self,
-			actions: Optional[List[Action]],
+			actions: List[Action],
 			*,
 			log_file: Optional[Path] = None,
 			log_level: int = logging.DEBUG,
@@ -63,7 +63,7 @@ class StreamDeck(Base):
 				log_backup_count=log_backup_count,
 				)
 
-		self.actions_list: Optional[List[Action]] = actions
+		self.actions_list: List[Action] = actions
 		self.actions: Dict[str, Action] = {}
 
 		self.ws: Optional[websockets.WebSocketClientProtocol] = None
