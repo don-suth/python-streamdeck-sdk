@@ -219,6 +219,51 @@ class BaseEventHandlerMixin:
 
 # class ActionEventHandlersMixin:
 class ActionEventHandlersMixin(BaseEventHandlerMixin):
+	async def _on_did_receive_settings(self, obj: events_received_objs.DidReceiveSettings) -> None:
+		await self.on_did_receive_settings(obj=obj)
+
+	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		await self.on_key_down(obj=obj)
+
+	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+		await self.on_key_up(obj=obj)
+
+	async def _on_touch_tap(self, obj: events_received_objs.TouchTap) -> None:
+		await self.on_touch_tap(obj=obj)
+
+	async def _on_dial_down(self, obj: events_received_objs.DialDown) -> None:
+		await self.on_dial_down(obj=obj)
+
+	async def _on_dial_up(self, obj: events_received_objs.DialUp) -> None:
+		await self.on_dial_up(obj=obj)
+
+	async def _on_dial_press(self, obj: events_received_objs.DialPress) -> None:
+		await self.on_dial_press(obj=obj)
+
+	async def _on_dial_rotate(self, obj: events_received_objs.DialRotate) -> None:
+		await self.on_dial_rotate(obj=obj)
+
+	async def _on_will_appear(self, obj: events_received_objs.WillAppear) -> None:
+		await self.on_will_appear(obj=obj)
+
+	async def _on_will_disappear(self, obj: events_received_objs.WillDisappear) -> None:
+		await self.on_will_disappear(obj=obj)
+
+	async def _on_title_parameters_did_change(self, obj: events_received_objs.TitleParametersDidChange) -> None:
+		await self.on_title_parameters_did_change(obj=obj)
+
+	async def _on_property_inspector_did_appear(self, obj: events_received_objs.PropertyInspectorDidAppear) -> None:
+		await self.on_property_inspector_did_appear(obj=obj)
+
+	async def _on_property_inspector_did_disappear(self, obj: events_received_objs.PropertyInspectorDidDisappear) -> None:
+		await self.on_property_inspector_did_disappear(obj=obj)
+
+	async def _on_send_to_plugin(self, obj: events_received_objs.SendToPlugin) -> None:
+		await self.on_send_to_plugin(obj=obj)
+
+	async def _on_send_to_property_inspector(self, obj: events_received_objs.SendToPropertyInspector) -> None:
+		await self.on_send_to_property_inspector(obj=obj)
+
 	async def on_did_receive_settings(self, obj: events_received_objs.DidReceiveSettings) -> None:
 		pass
 

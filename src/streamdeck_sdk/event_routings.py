@@ -29,7 +29,7 @@ def fill_routing_map(
 	event_handler_mixin_dict = dict(event_handler_mixin.__dict__)
 	for attr, value in event_handler_mixin_dict.items():
 		attr: str
-		if not attr.startswith("on_"):
+		if not attr.startswith("_on_"):
 			continue
 		assert asyncio.iscoroutinefunction(value)
 
