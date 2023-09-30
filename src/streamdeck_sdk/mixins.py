@@ -353,7 +353,7 @@ class ExtraKeyEventHandlersMixin(BaseEventHandlerMixin):
 	double_press_delay: float = 0.5
 	latest_key_events: dict[str, tuple[float, bool]] = dict()
 
-	async def on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
 		# Intercept the normal KeyDown event, and start timing.
 		context = obj.context
 		loop = asyncio.get_running_loop()
@@ -380,7 +380,7 @@ class ExtraKeyEventHandlersMixin(BaseEventHandlerMixin):
 					await self.extra_on_key_long_press(obj=obj)
 					return
 
-	async def on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
 		# Intercept the normal KeyUp event.
 		context: str = obj.context
 		loop = asyncio.get_running_loop()
