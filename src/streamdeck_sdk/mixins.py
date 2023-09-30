@@ -286,17 +286,62 @@ class PluginEventHandlersMixin(BaseEventHandlerMixin):
 
 
 class ExtraKeyEventHandlersMixin(BaseEventHandlerMixin):
-	long_press_delay: int = 800
-	double_press_delay: int = 500
-	press_events: defaultdict[str, dict[str, float]] = defaultdict(lambda: {"down": None, "up": None})
+	long_press_delay: float = 0.8
+	double_press_delay: float = 0.5
+	latest_key_events: dict[str, tuple[float, bool]] = dict()
 
 	async def on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		# Intercept the normal KeyDown event, and start timing.
+		context = obj.context
 		loop = asyncio.get_running_loop()
-		self.press_events[obj.context]["down"] = await loop.create_future()
-		await asyncio.sleep()
+		time_start = loop.time()
+
+		if self.long_press_delay > 0:
+			while True:
+				# Check back every 100ms.
+				await asyncio.sleep(0.1)
+				time_now = loop.time()
+
+				# Check the latest key-press. If it is newer, then
+				# the key has been released, and we can stop checking.
+				latest_event = self.latest_key_events.get(context, None)
+				if latest_event is not None:
+					if latest_event[0] > time_start:
+						break
+
+				# If the time is over the long press time, then
+				# we tell the action to ignore the next KeyUp event.
+				elapsed_time = time_now - time_start
+				if elapsed_time >= self.long_press_delay:
+					self.latest_key_events[context] = (time_now, True)
+					await self.extra_on_key_long_press(obj=obj)
+					return
 
 	async def on_key_up(self, obj: events_received_objs.KeyUp) -> None:
-		pass
+		# Intercept the normal KeyUp event.
+		context: str = obj.context
+		loop = asyncio.get_running_loop()
+		should_skip: bool = False
+		is_double_press: bool = False
+		latest_event: tuple[float, bool] = self.latest_key_events.get(context, None)
+		time_now = loop.time()
+
+		# Check the last event to see if we should skip this one.
+		if latest_event is not None:
+			last_key_time, should_skip = latest_event
+			elapsed_time = time_now - last_key_time
+			# If not, check if the last event happened quickly enough.
+			# If so, it's a double press.
+			if elapsed_time < self.double_press_delay:
+				is_double_press = True
+
+		self.latest_key_events[context] = (time_now, False)
+		if not should_skip:
+			if is_double_press:
+				await self.extra_on_key_double_press(obj=obj)
+			else:
+				await self.extra_on_key_press(obj=obj)
+
 
 	async def extra_on_key_long_press(self, obj):
 		pass
