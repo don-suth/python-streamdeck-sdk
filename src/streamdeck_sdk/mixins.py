@@ -408,4 +408,3 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 
 	async def on_key_double_press(self, obj):
 		pass
-
