@@ -311,6 +311,24 @@ class ActionEventHandlersMixin(BaseEventHandlerMixin):
 
 
 class PluginEventHandlersMixin(BaseEventHandlerMixin):
+	async def _on_did_receive_global_settings(self, obj: events_received_objs.DidReceiveGlobalSettings) -> None:
+		await self.on_did_receive_global_settings(obj=obj)
+
+	async def _on_device_did_connect(self, obj: events_received_objs.DeviceDidConnect) -> None:
+		await self.on_device_did_connect(obj=obj)
+
+	async def _on_device_did_disconnect(self, obj: events_received_objs.DeviceDidDisconnect) -> None:
+		await self.on_device_did_disconnect(obj=obj)
+
+	async def _on_application_did_launch(self, obj: events_received_objs.ApplicationDidLaunch) -> None:
+		await self.on_application_did_launch(obj=obj)
+
+	async def _on_application_did_terminate(self, obj: events_received_objs.ApplicationDidTerminate) -> None:
+		await self.on_application_did_terminate(obj=obj)
+
+	async def _on_system_did_wake_up(self, obj: events_received_objs.SystemDidWakeUp) -> None:
+		await self.on_system_did_wake_up(obj=obj)
+
 	async def on_did_receive_global_settings(self, obj: events_received_objs.DidReceiveGlobalSettings) -> None:
 		pass
 
