@@ -92,7 +92,9 @@ class StreamDeck(Base):
 		parser.add_argument('-info', dest='info', type=str, help="Info", required=True)
 		args = parser.parse_args()
 
+		self.info: registration_objs.Info = registration_objs.Info.model_validate(json.loads(args.info))
 		rename_plugin_logger(self.info.plugin.uuid)
+		logger.debug(f"{self.info=}")
 
 		self.port: int = args.port
 		logger.debug(f"{self.port=}")
@@ -100,8 +102,6 @@ class StreamDeck(Base):
 		logger.debug(f"{self.plugin_uuid=}")
 		self.register_event: str = args.registerEvent
 		logger.debug(f"{self.register_event=}")
-		self.info: registration_objs.Info = registration_objs.Info.model_validate(json.loads(args.info))
-		logger.debug(f"{self.info=}")
 
 		self.registration_dict = {"event": self.register_event, "uuid": self.plugin_uuid}
 		logger.debug(f"{self.registration_dict=}")
