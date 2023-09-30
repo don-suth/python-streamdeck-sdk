@@ -39,6 +39,7 @@ class Action(Base):
 		self.plugin_uuid: Optional[str] = None
 		self.ws: Optional[websockets.WebSocketClientProtocol] = None
 		self.info: Optional[registration_objs.Info] = None
+		self.instance_settings: dict[str, dict] = {}
 
 
 class StreamDeck(Base):
