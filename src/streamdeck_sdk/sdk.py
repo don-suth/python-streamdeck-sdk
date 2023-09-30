@@ -29,7 +29,9 @@ class Base(
 class Action(Base):
 	"""
 	Base Action class.
-	Subclass this, set a UUID, and override the handler methods to get going!
+
+	Attributes:
+		UUID: The unique identifier of the action. e.g. "com.example.plugin.action"
 	"""
 	UUID: str
 
