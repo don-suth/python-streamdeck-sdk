@@ -4,8 +4,6 @@ import json
 import pydantic
 import websockets
 import logging
-from collections import defaultdict
-from typing import Any
 
 from .logger import log_errors_async
 from .sd_objs import events_received_objs, events_sent_objs
@@ -348,7 +346,7 @@ class PluginEventHandlersMixin(BaseEventHandlerMixin):
 		pass
 
 
-class ExtraKeyEventHandlersMixin(BaseEventHandlerMixin):
+class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 	long_press_delay: float = 0.8
 	double_press_delay: float = 0.5
 	latest_key_events: dict[str, tuple[float, bool]] = dict()
@@ -377,7 +375,7 @@ class ExtraKeyEventHandlersMixin(BaseEventHandlerMixin):
 				elapsed_time = time_now - time_start
 				if elapsed_time >= self.long_press_delay:
 					self.latest_key_events[context] = (time_now, True)
-					await self.extra_on_key_long_press(obj=obj)
+					await self.on_key_long_press(obj=obj)
 					return
 
 	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
@@ -401,16 +399,13 @@ class ExtraKeyEventHandlersMixin(BaseEventHandlerMixin):
 		self.latest_key_events[context] = (time_now, False)
 		if not should_skip:
 			if is_double_press:
-				await self.extra_on_key_double_press(obj=obj)
+				await self.on_key_double_press(obj=obj)
 			else:
-				await self.extra_on_key_press(obj=obj)
+				await self.on_key_up(obj=obj)
 
-
-	async def extra_on_key_long_press(self, obj):
+	async def on_key_long_press(self, obj):
 		pass
 
-	async def extra_on_key_double_press(self, obj):
+	async def on_key_double_press(self, obj):
 		pass
 
-	async def extra_on_key_press(self, obj):
-		pass
