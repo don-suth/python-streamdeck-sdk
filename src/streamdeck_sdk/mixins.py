@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import pydantic
@@ -216,6 +217,51 @@ class BaseEventHandlerMixin:
 
 # class ActionEventHandlersMixin:
 class ActionEventHandlersMixin(BaseEventHandlerMixin):
+	async def _on_did_receive_settings(self, obj: events_received_objs.DidReceiveSettings) -> None:
+		await self.on_did_receive_settings(obj=obj)
+
+	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		await self.on_key_down(obj=obj)
+
+	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+		await self.on_key_up(obj=obj)
+
+	async def _on_touch_tap(self, obj: events_received_objs.TouchTap) -> None:
+		await self.on_touch_tap(obj=obj)
+
+	async def _on_dial_down(self, obj: events_received_objs.DialDown) -> None:
+		await self.on_dial_down(obj=obj)
+
+	async def _on_dial_up(self, obj: events_received_objs.DialUp) -> None:
+		await self.on_dial_up(obj=obj)
+
+	async def _on_dial_press(self, obj: events_received_objs.DialPress) -> None:
+		await self.on_dial_press(obj=obj)
+
+	async def _on_dial_rotate(self, obj: events_received_objs.DialRotate) -> None:
+		await self.on_dial_rotate(obj=obj)
+
+	async def _on_will_appear(self, obj: events_received_objs.WillAppear) -> None:
+		await self.on_will_appear(obj=obj)
+
+	async def _on_will_disappear(self, obj: events_received_objs.WillDisappear) -> None:
+		await self.on_will_disappear(obj=obj)
+
+	async def _on_title_parameters_did_change(self, obj: events_received_objs.TitleParametersDidChange) -> None:
+		await self.on_title_parameters_did_change(obj=obj)
+
+	async def _on_property_inspector_did_appear(self, obj: events_received_objs.PropertyInspectorDidAppear) -> None:
+		await self.on_property_inspector_did_appear(obj=obj)
+
+	async def _on_property_inspector_did_disappear(self, obj: events_received_objs.PropertyInspectorDidDisappear) -> None:
+		await self.on_property_inspector_did_disappear(obj=obj)
+
+	async def _on_send_to_plugin(self, obj: events_received_objs.SendToPlugin) -> None:
+		await self.on_send_to_plugin(obj=obj)
+
+	async def _on_send_to_property_inspector(self, obj: events_received_objs.SendToPropertyInspector) -> None:
+		await self.on_send_to_property_inspector(obj=obj)
+
 	async def on_did_receive_settings(self, obj: events_received_objs.DidReceiveSettings) -> None:
 		pass
 
@@ -263,6 +309,24 @@ class ActionEventHandlersMixin(BaseEventHandlerMixin):
 
 
 class PluginEventHandlersMixin(BaseEventHandlerMixin):
+	async def _on_did_receive_global_settings(self, obj: events_received_objs.DidReceiveGlobalSettings) -> None:
+		await self.on_did_receive_global_settings(obj=obj)
+
+	async def _on_device_did_connect(self, obj: events_received_objs.DeviceDidConnect) -> None:
+		await self.on_device_did_connect(obj=obj)
+
+	async def _on_device_did_disconnect(self, obj: events_received_objs.DeviceDidDisconnect) -> None:
+		await self.on_device_did_disconnect(obj=obj)
+
+	async def _on_application_did_launch(self, obj: events_received_objs.ApplicationDidLaunch) -> None:
+		await self.on_application_did_launch(obj=obj)
+
+	async def _on_application_did_terminate(self, obj: events_received_objs.ApplicationDidTerminate) -> None:
+		await self.on_application_did_terminate(obj=obj)
+
+	async def _on_system_did_wake_up(self, obj: events_received_objs.SystemDidWakeUp) -> None:
+		await self.on_system_did_wake_up(obj=obj)
+
 	async def on_did_receive_global_settings(self, obj: events_received_objs.DidReceiveGlobalSettings) -> None:
 		pass
 
@@ -279,4 +343,68 @@ class PluginEventHandlersMixin(BaseEventHandlerMixin):
 		pass
 
 	async def on_system_did_wake_up(self, obj: events_received_objs.SystemDidWakeUp) -> None:
+		pass
+
+
+class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
+	long_press_delay: float = 0.8
+	double_press_delay: float = 0.5
+	latest_key_events: dict[str, tuple[float, bool]] = dict()
+
+	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		# Intercept the normal KeyDown event, and start timing.
+		context = obj.context
+		loop = asyncio.get_running_loop()
+		time_start = loop.time()
+
+		if self.long_press_delay > 0:
+			while True:
+				# Check back every 100ms.
+				await asyncio.sleep(0.1)
+				time_now = loop.time()
+
+				# Check the latest key-press. If it is newer, then
+				# the key has been released, and we can stop checking.
+				latest_event = self.latest_key_events.get(context, None)
+				if latest_event is not None:
+					if latest_event[0] > time_start:
+						break
+
+				# If the time is over the long press time, then
+				# we tell the action to ignore the next KeyUp event.
+				elapsed_time = time_now - time_start
+				if elapsed_time >= self.long_press_delay:
+					self.latest_key_events[context] = (time_now, True)
+					await self.on_key_long_press(obj=obj)
+					return
+
+	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+		# Intercept the normal KeyUp event.
+		context: str = obj.context
+		loop = asyncio.get_running_loop()
+		should_skip: bool = False
+		is_double_press: bool = False
+		latest_event: tuple[float, bool] = self.latest_key_events.get(context, None)
+		time_now = loop.time()
+
+		# Check the last event to see if we should skip this one.
+		if latest_event is not None:
+			last_key_time, should_skip = latest_event
+			elapsed_time = time_now - last_key_time
+			# If not, check if the last event happened quickly enough.
+			# If so, it's a double press.
+			if elapsed_time < self.double_press_delay:
+				is_double_press = True
+
+		self.latest_key_events[context] = (time_now, False)
+		if not should_skip:
+			if is_double_press:
+				await self.on_key_double_press(obj=obj)
+			else:
+				await self.on_key_up(obj=obj)
+
+	async def on_key_long_press(self, obj):
+		pass
+
+	async def on_key_double_press(self, obj):
 		pass
