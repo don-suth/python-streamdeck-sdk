@@ -1,8 +1,11 @@
+import asyncio
 import json
 
 import pydantic
 import websockets
 import logging
+from collections import defaultdict
+from typing import Any
 
 from .logger import log_errors_async
 from .sd_objs import events_received_objs, events_sent_objs
@@ -279,4 +282,27 @@ class PluginEventHandlersMixin(BaseEventHandlerMixin):
 		pass
 
 	async def on_system_did_wake_up(self, obj: events_received_objs.SystemDidWakeUp) -> None:
+		pass
+
+
+class ExtraKeyEventHandlersMixin(BaseEventHandlerMixin):
+	long_press_delay: int = 800
+	double_press_delay: int = 500
+	press_events: defaultdict[str, dict[str, float]] = defaultdict(lambda: {"down": None, "up": None})
+
+	async def on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		loop = asyncio.get_running_loop()
+		self.press_events[obj.context]["down"] = await loop.create_future()
+		await asyncio.sleep()
+
+	async def on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+		pass
+
+	async def extra_on_key_long_press(self, obj):
+		pass
+
+	async def extra_on_key_double_press(self, obj):
+		pass
+
+	async def extra_on_key_press(self, obj):
 		pass
