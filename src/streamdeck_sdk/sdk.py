@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -74,6 +75,8 @@ class StreamDeck(Base):
 		self.register_event: Optional[str] = None
 		self.info: Optional[registration_objs.Info] = None
 		self.registration_dict: Optional[dict] = None
+
+		self.background_tasks: set[Awaitable] = set()
 
 	@log_errors_async
 	async def run(self) -> None:
@@ -155,13 +158,23 @@ class StreamDeck(Base):
 		logger.debug(f"{obj=}")
 
 		logger.debug("Running event in plugin handler.")  # TODO: Remove
-		await self.route_event_in_plugin_handler(event_routing=event_routing, obj=obj)
+
+		def schedule_background_task(awaitable):
+			task = asyncio.create_task(awaitable)
+			self.background_tasks.add(task)
+			task.add_done_callback(self.background_tasks.discard)
+
+
+		# await self.route_event_in_plugin_handler(event_routing=event_routing, obj=obj)
+		schedule_background_task(self.route_event_in_plugin_handler(event_routing=event_routing, obj=obj))
 		if event_routing.type == event_routings.EventRoutingObjTypes.ACTION:
 			logger.debug("Running action event in action handler")  # TODO: Remove
-			await self.route_action_event_in_action_handler(event_routing=event_routing, obj=obj)
+			# await self.route_action_event_in_action_handler(event_routing=event_routing, obj=obj)
+			schedule_background_task(self.route_action_event_in_action_handler(event_routing=event_routing, obj=obj))
 		elif event_routing.type == event_routings.EventRoutingObjTypes.PLUGIN:
-			logger.debug("Running plugin event in plugin handler")  # TODO: Remove
-			await self.route_plugin_event_in_action_handlers(event_routing=event_routing, obj=obj)
+			logger.debug("Running plugin event in action handler")  # TODO: Remove
+			# await self.route_plugin_event_in_action_handlers(event_routing=event_routing, obj=obj)
+			schedule_background_task(self.route_plugin_event_in_action_handlers(event_routing, obj=obj))
 
 	@log_errors_async
 	async def route_event_in_plugin_handler(

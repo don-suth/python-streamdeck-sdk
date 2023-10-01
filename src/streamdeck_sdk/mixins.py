@@ -8,6 +8,8 @@ import logging
 from .logger import log_errors_async
 from .sd_objs import events_received_objs, events_sent_objs
 
+from typing import Awaitable
+
 logger = logging.getLogger()
 
 
@@ -212,7 +214,12 @@ class ActionEventsSendMixin(BaseEventSendMixin):
 
 
 class BaseEventHandlerMixin:
-	pass
+	background_tasks: set[Awaitable] = set()
+
+	def schedule_background_task(self, awaitable):
+		task = asyncio.create_task(awaitable)
+		self.background_tasks.add(task)
+		task.add_done_callback(self.background_tasks.discard)
 
 
 # class ActionEventHandlersMixin:
@@ -222,11 +229,13 @@ class ActionEventHandlersMixin(BaseEventHandlerMixin):
 
 	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
 		logger.debug("sending from _on_key_down to self.on_key_down")  # TODO: Remove
-		await self.on_key_down(obj=obj)
+		# await self.on_key_down(obj=obj)
+		self.schedule_background_task(self.on_key_down(obj=obj))
 
 	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
 		logger.debug("sending from _on_key_up to self.on_key_up")  # TODO: Remove
-		await self.on_key_up(obj=obj)
+		# await self.on_key_up(obj=obj)
+		self.schedule_background_task(self.on_key_up(obj=obj))
 
 	async def _on_touch_tap(self, obj: events_received_objs.TouchTap) -> None:
 		await self.on_touch_tap(obj=obj)
@@ -353,69 +362,120 @@ class PluginEventHandlersMixin(BaseEventHandlerMixin):
 class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 	long_press_delay: float = 0.8
 	double_press_delay: float = 0.5
-	latest_key_events: dict[str, tuple[float, bool]] = dict()
+	last_key_down_event: dict[str, asyncio.Future] = {}
+	#last_key_down_time: dict[str, float] = {}
+	#last_key_up_event: dict[str, asyncio.Future] = {}
+	last_key_up_time: dict[str, float] = {}
+	should_skip_key_up: dict[str, bool] = {}
+	# latest_key_events: dict[str, tuple[float, bool]] = dict()
 
 	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
 		logger.debug("extra _on_key_down triggered")  # TODO: Remove
 		# Intercept the normal KeyDown event, and start timing.
 		context = obj.context
 		loop = asyncio.get_running_loop()
-		time_start = loop.time()
+		#time_start = loop.time()
 
 		if self.long_press_delay > 0:
-			while True:
-				# Check back every 100ms.
-				await asyncio.sleep(0.1)
-				time_now = loop.time()
-				logger.debug(f"{time_now=}, {time_start=}")  # TODO: Remove
+			#self.last_key_down_time[context] = time_start
+			self.last_key_down_event[context] = loop.create_future()
 
-				# Check the latest key-press. If it is newer, then
-				# the key has been released, and we can stop checking.
-				latest_event = self.latest_key_events.get(context, None)
-				logger.debug(f"{latest_event[0]=}, {latest_event[1]=}")  # TODO: Remove
-				if latest_event is not None:
-					if latest_event[0] > time_start:
-						break
+			try:
+				# Wait until a KeyUp event happens, or until we reach the long press delay.
+				logger.debug("Begin waiting for a KeyUp")
+				await asyncio.wait_for(self.last_key_down_event[context], self.long_press_delay)
+				# At this point, a KeyUp was received.
+				logger.debug("A KeyUp was received: Cancel the on_long_press")
+			except TimeoutError:
+				# At this point, it is a long press.
+				# Skip the next KeyUp, and call LongPress.
+				logger.debug("KeyUp not detected: Long Press")
+				self.should_skip_key_up[context] = True
+				# await self.on_key_long_press(obj=obj)
+				self.schedule_background_task(self.on_key_long_press(obj=obj))
 
-				# If the time is over the long press time, then
-				# we tell the action to ignore the next KeyUp event.
-				elapsed_time = time_now - time_start
-				logger.debug(f"{elapsed_time=}")  # TODO: Remove
-				if elapsed_time >= self.long_press_delay:
-					self.latest_key_events[context] = (time_now, True)
-					await self.on_key_long_press(obj=obj)
-					return
+			# while True:
+			# 	# Check back every 100ms.
+			# 	await asyncio.sleep(0.1)
+			# 	time_now = loop.time()
+			# 	logger.debug(f"{time_now=}, {time_start=}")  # TODO: Remove
+			#
+			# 	# Check the latest key-press. If it is newer, then
+			# 	# the key has been released, and we can stop checking.
+			# 	latest_event = self.latest_key_events.get(context, None)
+			# 	logger.debug(f"{latest_event[0]=}, {latest_event[1]=}")  # TODO: Remove
+			# 	if latest_event is not None:
+			# 		if latest_event[0] > time_start:
+			# 			break
+			#
+			# 	# If the time is over the long press time, then
+			# 	# we tell the action to ignore the next KeyUp event.
+			# 	elapsed_time = time_now - time_start
+			# 	logger.debug(f"{elapsed_time=}")  # TODO: Remove
+			# 	if elapsed_time >= self.long_press_delay:
+			# 		self.latest_key_events[context] = (time_now, True)
+			# 		await self.on_key_long_press(obj=obj)
+			# 		return
 
 	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
 		logger.debug("extra _on_key_up triggered")  # TODO: Remove
-		# Intercept the normal KeyUp event.
 		context: str = obj.context
+		if self.last_key_down_event[context] is not None and not self.last_key_down_event[context].done():
+			logger.debug("Setting the result of the Future to cancel the LongPress.")
+			self.last_key_down_event[context].set_result(True)
+		# Intercept the normal KeyUp event.
 		loop = asyncio.get_running_loop()
-		should_skip: bool = False
+		should_skip: bool = self.should_skip_key_up.get(context, False)
 		is_double_press: bool = False
-		latest_event: tuple[float, bool] = self.latest_key_events.get(context, None)
-		time_now = loop.time()
 
-		# Check the last event to see if we should skip this one.
-		if latest_event is not None:
-			last_key_time, should_skip = latest_event
-			elapsed_time = time_now - last_key_time
-			# If not, check if the last event happened quickly enough.
-			# If so, it's a double press.
-			if elapsed_time < self.double_press_delay:
+		time_now = loop.time()
+		time_of_last_event = self.last_key_up_time.get(context, None)
+
+		if time_of_last_event is not None:
+			elapsed_time: float = time_now - time_of_last_event
+			logger.debug(f"{time_now=} - {time_of_last_event= } = {elapsed_time=}")
+			if elapsed_time <= self.double_press_delay:
+				logger.debug("This is a double press!")
 				is_double_press = True
 
-		self.latest_key_events[context] = (time_now, False)
-		logger.debug(f"{should_skip=}")  # TODO: Remove
-		if not should_skip:
-			if is_double_press:
-				logger.debug("double press!")  # TODO: Remove
-				await self.on_key_double_press(obj=obj)
-			else:
-				logger.debug("regular key up")  # TODO: Remove
-				await self.on_key_up(obj=obj)
+
+		self.should_skip_key_up[context] = False
+
+		if should_skip:
+			logger.debug("Skipping KeyUp after a keyhold")
 		else:
-			logger.debug("Skipping")  # TODO: Remove
+			self.last_key_up_time[context] = time_now
+			logger.debug("Not skipping KeyUp")
+			if is_double_press:
+				logger.debug("Double Press!")
+				# await self.on_key_double_press(obj=obj)
+				self.schedule_background_task(self.on_key_double_press(obj=obj))
+			else:
+				logger.debug("Regular press")
+				# await self.on_key_up(obj=obj)
+				self.schedule_background_task(self.on_key_up(obj=obj))
+
+
+		# # Check the last event to see if we should skip this one.
+		# if latest_event is not None:
+		# 	last_key_time, should_skip = latest_event
+		# 	elapsed_time = time_now - last_key_time
+		# 	# If not, check if the last event happened quickly enough.
+		# 	# If so, it's a double press.
+		# 	if elapsed_time < self.double_press_delay:
+		# 		is_double_press = True
+		#
+		# self.latest_key_events[context] = (time_now, False)
+		# logger.debug(f"{should_skip=}")  # TODO: Remove
+		# if not should_skip:
+		# 	if is_double_press:
+		# 		logger.debug("double press!")  # TODO: Remove
+		# 		await self.on_key_double_press(obj=obj)
+		# 	else:
+		# 		logger.debug("regular key up")  # TODO: Remove
+		# 		await self.on_key_up(obj=obj)
+		# else:
+		# 	logger.debug("Skipping")  # TODO: Remove
 
 	async def on_key_long_press(self, obj):
 		logger.debug("on_key_long_press: I should be overwritten")  # TODO: Remove
