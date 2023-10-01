@@ -221,9 +221,11 @@ class ActionEventHandlersMixin(BaseEventHandlerMixin):
 		await self.on_did_receive_settings(obj=obj)
 
 	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		logger.debug("sending from _on_key_down to self.on_key_down")  # TODO: Remove
 		await self.on_key_down(obj=obj)
 
 	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+		logger.debug("sending from _on_key_up to self.on_key_up")  # TODO: Remove
 		await self.on_key_up(obj=obj)
 
 	async def _on_touch_tap(self, obj: events_received_objs.TouchTap) -> None:
@@ -266,9 +268,11 @@ class ActionEventHandlersMixin(BaseEventHandlerMixin):
 		pass
 
 	async def on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		logger.debug("on_key_down: I should be overwritten")  # TODO: Remove
 		pass
 
 	async def on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+		logger.debug("on_key_up: I should be overwritten")  # TODO: Remove
 		pass
 
 	async def on_touch_tap(self, obj: events_received_objs.TouchTap) -> None:
@@ -352,6 +356,7 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 	latest_key_events: dict[str, tuple[float, bool]] = dict()
 
 	async def _on_key_down(self, obj: events_received_objs.KeyDown) -> None:
+		logger.debug("extra _on_key_down triggered")  # TODO: Remove
 		# Intercept the normal KeyDown event, and start timing.
 		context = obj.context
 		loop = asyncio.get_running_loop()
@@ -362,10 +367,12 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 				# Check back every 100ms.
 				await asyncio.sleep(0.1)
 				time_now = loop.time()
+				logger.debug(f"{time_now=}, {time_start=}")  # TODO: Remove
 
 				# Check the latest key-press. If it is newer, then
 				# the key has been released, and we can stop checking.
 				latest_event = self.latest_key_events.get(context, None)
+				logger.debug(f"{latest_event[0]=}, {latest_event[1]=}")  # TODO: Remove
 				if latest_event is not None:
 					if latest_event[0] > time_start:
 						break
@@ -373,12 +380,14 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 				# If the time is over the long press time, then
 				# we tell the action to ignore the next KeyUp event.
 				elapsed_time = time_now - time_start
+				logger.debug(f"{elapsed_time=}")  # TODO: Remove
 				if elapsed_time >= self.long_press_delay:
 					self.latest_key_events[context] = (time_now, True)
 					await self.on_key_long_press(obj=obj)
 					return
 
 	async def _on_key_up(self, obj: events_received_objs.KeyUp) -> None:
+		logger.debug("extra _on_key_up triggered")  # TODO: Remove
 		# Intercept the normal KeyUp event.
 		context: str = obj.context
 		loop = asyncio.get_running_loop()
@@ -397,14 +406,21 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 				is_double_press = True
 
 		self.latest_key_events[context] = (time_now, False)
+		logger.debug(f"{should_skip=}")  # TODO: Remove
 		if not should_skip:
 			if is_double_press:
+				logger.debug("double press!")  # TODO: Remove
 				await self.on_key_double_press(obj=obj)
 			else:
+				logger.debug("regular key up")  # TODO: Remove
 				await self.on_key_up(obj=obj)
+		else:
+			logger.debug("Skipping")  # TODO: Remove
 
 	async def on_key_long_press(self, obj):
+		logger.debug("on_key_long_press: I should be overwritten")  # TODO: Remove
 		pass
 
 	async def on_key_double_press(self, obj):
+		logger.debug("on_key_double_press: I should be overwritten")  # TODO: Remove
 		pass

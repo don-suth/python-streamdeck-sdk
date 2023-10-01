@@ -150,13 +150,17 @@ class StreamDeck(Base):
 			logger.warning("event_routing is None")
 			return
 
+		logger.debug(f"{event_routing=}")  # TODO: Remove
 		obj = event_routing.obj_type.model_validate(message_dict)
 		logger.debug(f"{obj=}")
 
+		logger.debug("Running event in plugin handler.")  # TODO: Remove
 		await self.route_event_in_plugin_handler(event_routing=event_routing, obj=obj)
 		if event_routing.type == event_routings.EventRoutingObjTypes.ACTION:
+			logger.debug("Running action event in action handler")  # TODO: Remove
 			await self.route_action_event_in_action_handler(event_routing=event_routing, obj=obj)
 		elif event_routing.type == event_routings.EventRoutingObjTypes.PLUGIN:
+			logger.debug("Running plugin event in plugin handler")  # TODO: Remove
 			await self.route_plugin_event_in_action_handlers(event_routing=event_routing, obj=obj)
 
 	@log_errors_async
