@@ -40,6 +40,7 @@ class Action(Base):
 		self.ws: Optional[websockets.WebSocketClientProtocol] = None
 		self.info: Optional[registration_objs.Info] = None
 		self.instance_settings: dict[str, dict] = {}
+		self.sd: Optional[StreamDeck] = None
 
 
 class StreamDeck(Base):
