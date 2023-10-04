@@ -3,7 +3,7 @@ import websockets
 import argparse
 import json
 from pathlib import Path
-from typing import List, Optional, Callable, Awaitable
+from typing import Optional, Callable, Awaitable
 
 import pydantic
 
@@ -28,7 +28,7 @@ class StreamDeck(Base):
 	"""
 	def __init__(
 			self,
-			actions: List[Action],
+			actions: list[Action],
 			*,
 			log_file: Optional[Path] = None,
 			log_level: int = logging.DEBUG,
@@ -45,8 +45,8 @@ class StreamDeck(Base):
 				log_backup_count=log_backup_count,
 				)
 
-		self.actions_list: List[Action] = actions
-		self.registered_actions: Dict[str, Action] = {}
+		self.actions_list: list[Action] = actions
+		self.registered_actions: dict[str, Action] = {}
 
 		self.ws: Optional[websockets.WebSocketClientProtocol] = None
 		self.port: Optional[int] = None
