@@ -5,8 +5,8 @@ import pydantic
 import websockets
 import logging
 
-from .logger import log_errors_async
-from .sd_objs import events_received_objs, events_sent_objs
+from . import log_errors_async
+from . import events_received_objs, events_sent_objs
 
 logger = logging.getLogger()
 
