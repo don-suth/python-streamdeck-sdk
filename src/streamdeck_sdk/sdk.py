@@ -175,11 +175,11 @@ class StreamDeck(Base):
 		this routes them there.
 		"""
 		try:
-			handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(self, event_routing.handler_name)
+			handler: Callable[[pydantic.BaseModel], Coroutine[None]] = getattr(self, event_routing.handler_name)
 		except AttributeError as err:
 			logger.error(f"Handler missing: {str(err)}", exc_info=True)
 			return
-		await handler(obj)
+		self.schedule_task_soon(handler(obj))
 
 	@log_errors_async
 	async def route_action_event_in_action_handler(
@@ -203,12 +203,12 @@ class StreamDeck(Base):
 			return
 
 		try:
-			handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
+			handler: Callable[[pydantic.BaseModel], Coroutine[None]] = getattr(action_obj, event_routing.handler_name)
 		except AttributeError as err:
 			logger.error(f"Handler missing: {str(err)}", exc_info=True)
 			return
 
-		await handler(obj)
+		self.schedule_task_soon(handler(obj))
 
 	@log_errors_async
 	async def route_plugin_event_in_action_handlers(
@@ -222,11 +222,11 @@ class StreamDeck(Base):
 		"""
 		for action_obj in self.registered_actions.values():
 			try:
-				handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
+				handler: Callable[[pydantic.BaseModel], Coroutine[None]] = getattr(action_obj, event_routing.handler_name)
 			except AttributeError as err:
 				logger.error(f"Handler missing: {str(err)}", exc_info=True)
 				return
-			await handler(obj)
+			self.schedule_task_soon(handler(obj))
 
 	@log_errors_async
 	async def __start_ws_connection(self) -> None:
