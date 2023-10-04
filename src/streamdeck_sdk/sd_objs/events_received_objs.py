@@ -276,3 +276,19 @@ class SendToPropertyInspector(BaseModel):
 	event: str = "sendToPropertyInspector"
 
 # endregion Models
+
+# Extras
+class KeyHoldPayload(KeyDownPayload):
+	pass
+
+
+class KeyHold(KeyDown):
+	payload: KeyHoldPayload
+
+
+class KeyDoublePressPayload(KeyUpPayload):
+	pass
+
+
+class KeyDoublePress(KeyUp):
+	payload: KeyDoublePressPayload

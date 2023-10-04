@@ -375,6 +375,7 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 				elapsed_time = time_now - time_start
 				if elapsed_time >= self.long_press_delay:
 					self.latest_key_events[context] = (time_now, True)
+					obj = events_received_objs.KeyHold.model_validate(obj=obj, from_attributes=True)
 					await self.on_key_long_press(obj=obj)
 					return
 
@@ -399,12 +400,13 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 		self.latest_key_events[context] = (time_now, False)
 		if not should_skip:
 			if is_double_press:
+				obj = events_received_objs.KeyDoublePress.model_validate(obj=obj, from_attributes=True)
 				await self.on_key_double_press(obj=obj)
 			else:
 				await self.on_key_up(obj=obj)
 
-	async def on_key_long_press(self, obj):
+	async def on_key_long_press(self, obj: events_received_objs.KeyHold) -> None:
 		pass
 
-	async def on_key_double_press(self, obj):
+	async def on_key_double_press(self, obj: events_received_objs.KeyDoublePress) -> None:
 		pass
