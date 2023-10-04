@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -74,6 +75,7 @@ class StreamDeck(Base):
 		self.register_event: Optional[str] = None
 		self.info: Optional[registration_objs.Info] = None
 		self.registration_dict: Optional[dict] = None
+		self.active_tasks: set[asyncio.Task] = set()
 
 	@log_errors_async
 	async def run(self) -> None:
