@@ -43,6 +43,12 @@ class Action(Base):
 		self.sd: Optional[StreamDeck] = None
 
 
+class ExtrasAction(mixins.ExtraKeyEventHandlersMixin, Action):
+	"""	Adds the on_key_long_press and on_key_double_press events to the action.
+	"""
+	pass
+
+
 class StreamDeck(Base):
 	"""
 	Main class for handling the plugin.

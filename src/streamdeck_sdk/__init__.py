@@ -1,1 +1,1 @@
-from .sdk import Action, StreamDeck
+from .sdk import Action, ExtrasAction, StreamDeck
