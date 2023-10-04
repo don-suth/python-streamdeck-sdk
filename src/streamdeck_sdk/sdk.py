@@ -1,8 +1,9 @@
 import argparse
+import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Optional, List, Dict, Callable, Awaitable
+from typing import Optional, List, Dict, Callable, Coroutine
 
 import pydantic
 import websockets
@@ -39,6 +40,7 @@ class Action(Base):
 		self.ws: Optional[websockets.WebSocketClientProtocol] = None
 		self.info: Optional[registration_objs.Info] = None
 		self.instance_settings: dict[str, dict] = {}
+		self.sd: Optional[StreamDeck] = None
 
 
 class StreamDeck(Base):
@@ -74,6 +76,7 @@ class StreamDeck(Base):
 		self.register_event: Optional[str] = None
 		self.info: Optional[registration_objs.Info] = None
 		self.registration_dict: Optional[dict] = None
+		self.active_tasks: set[asyncio.Task] = set()
 
 	@log_errors_async
 	async def run(self) -> None:
@@ -126,6 +129,7 @@ class StreamDeck(Base):
 			action.ws = self.ws
 			action.plugin_uuid = self.plugin_uuid
 			action.info = self.info
+			action.sd = self
 			self.registered_actions[action_uuid] = action
 
 	@log_errors_async
@@ -153,11 +157,12 @@ class StreamDeck(Base):
 		obj = event_routing.obj_type.model_validate(message_dict)
 		logger.debug(f"{obj=}")
 
-		await self.route_event_in_plugin_handler(event_routing=event_routing, obj=obj)
+		# Schedule the handlers to run, instead of waiting for them.
+		self.schedule_task_soon(self.route_event_in_plugin_handler(event_routing=event_routing, obj=obj))
 		if event_routing.type == event_routings.EventRoutingObjTypes.ACTION:
-			await self.route_action_event_in_action_handler(event_routing=event_routing, obj=obj)
+			self.schedule_task_soon(self.route_action_event_in_action_handler(event_routing=event_routing, obj=obj))
 		elif event_routing.type == event_routings.EventRoutingObjTypes.PLUGIN:
-			await self.route_plugin_event_in_action_handlers(event_routing=event_routing, obj=obj)
+			self.schedule_task_soon(self.route_plugin_event_in_action_handlers(event_routing=event_routing, obj=obj))
 
 	@log_errors_async
 	async def route_event_in_plugin_handler(
@@ -170,11 +175,11 @@ class StreamDeck(Base):
 		this routes them there.
 		"""
 		try:
-			handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(self, event_routing.handler_name)
+			handler: Callable[[pydantic.BaseModel], Coroutine[None]] = getattr(self, event_routing.handler_name)
 		except AttributeError as err:
 			logger.error(f"Handler missing: {str(err)}", exc_info=True)
 			return
-		await handler(obj)
+		self.schedule_task_soon(handler(obj))
 
 	@log_errors_async
 	async def route_action_event_in_action_handler(
@@ -198,12 +203,12 @@ class StreamDeck(Base):
 			return
 
 		try:
-			handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
+			handler: Callable[[pydantic.BaseModel], Coroutine[None]] = getattr(action_obj, event_routing.handler_name)
 		except AttributeError as err:
 			logger.error(f"Handler missing: {str(err)}", exc_info=True)
 			return
 
-		await handler(obj)
+		self.schedule_task_soon(handler(obj))
 
 	@log_errors_async
 	async def route_plugin_event_in_action_handlers(
@@ -217,11 +222,11 @@ class StreamDeck(Base):
 		"""
 		for action_obj in self.registered_actions.values():
 			try:
-				handler: Callable[[pydantic.BaseModel], Awaitable[None]] = getattr(action_obj, event_routing.handler_name)
+				handler: Callable[[pydantic.BaseModel], Coroutine[None]] = getattr(action_obj, event_routing.handler_name)
 			except AttributeError as err:
 				logger.error(f"Handler missing: {str(err)}", exc_info=True)
 				return
-			await handler(obj)
+			self.schedule_task_soon(handler(obj))
 
 	@log_errors_async
 	async def __start_ws_connection(self) -> None:
@@ -242,3 +247,19 @@ class StreamDeck(Base):
 				logger.info("Connection closed. Shutting down.")
 				logger.debug(f"{closed_connection.recv.code=} {closed_connection.recv.reason=}")
 				return
+
+	def schedule_task_soon(self, coro: Coroutine) -> asyncio.Task:
+		"""Schedules a task to be done on the next cycle of the event loop.
+		The Task is kept in self.active_tasks, and a callback is added to
+		remove it from that set when the task is complete.
+
+		Args:
+			coro: The Coroutine to schedule.
+
+		Returns: The resulting task object.
+
+		"""
+		task = asyncio.create_task(coro=coro)
+		self.active_tasks.add(task)
+		task.add_done_callback(self.active_tasks.discard)
+		return task
