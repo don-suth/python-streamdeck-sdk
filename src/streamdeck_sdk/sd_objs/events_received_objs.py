@@ -275,6 +275,7 @@ class SendToPropertyInspector(BaseModel):
 	payload: dict
 	event: str = "sendToPropertyInspector"
 
+
 # endregion Models
 
 # Extras
