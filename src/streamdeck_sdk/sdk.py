@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Optional, List, Dict, Callable, Awaitable
+from typing import Optional, List, Dict, Callable, Awaitable, Coroutine
 
 import pydantic
 import websockets
@@ -244,3 +244,19 @@ class StreamDeck(Base):
 				logger.info("Connection closed. Shutting down.")
 				logger.debug(f"{closed_connection.recv.code=} {closed_connection.recv.reason=}")
 				return
+
+	def schedule_task_soon(self, coro: Coroutine) -> asyncio.Task:
+		"""Schedules a task to be done on the next cycle of the event loop.
+		The Task is kept in self.active_tasks, and a callback is added to
+		remove it from that set when the task is complete.
+
+		Args:
+			coro: The Coroutine to schedule.
+
+		Returns: The resulting task object.
+
+		"""
+		task = asyncio.create_task(coro=coro)
+		self.active_tasks.add(task)
+		task.add_done_callback(self.active_tasks.discard)
+		return task
