@@ -129,6 +129,7 @@ class StreamDeck(Base):
 			action.ws = self.ws
 			action.plugin_uuid = self.plugin_uuid
 			action.info = self.info
+			action.sd = self
 			self.registered_actions[action_uuid] = action
 
 	@log_errors_async
