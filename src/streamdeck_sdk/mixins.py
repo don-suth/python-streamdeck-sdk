@@ -68,6 +68,7 @@ class PluginEventsSendMixin(BaseEventSendMixin):
 			payload=payload,
 			)
 		await self.send(message)
+		await self.get_global_settings()
 
 	async def get_global_settings(self) -> None:
 		"""Get the global settings.
@@ -128,6 +129,7 @@ class ActionEventsSendMixin(BaseEventSendMixin):
 			payload=payload,
 			)
 		await self.send(message)
+		await self.get_settings(context=context)
 
 	async def get_settings(
 			self,
