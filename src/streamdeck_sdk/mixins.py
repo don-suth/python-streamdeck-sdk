@@ -50,7 +50,7 @@ class SendMixin:
 		await self.ws.send(data)
 
 
-class BaseEventSendMixin(SendMixin):
+class BaseEventSendMixin(StreamDeckMixin, SendMixin):
 	pass
 
 
