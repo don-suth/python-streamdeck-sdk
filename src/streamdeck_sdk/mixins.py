@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 
 class StreamDeckMixin:
-	sd: StreamDeck|None
+	sd: StreamDeck | None
 
 
 class SendMixin:
