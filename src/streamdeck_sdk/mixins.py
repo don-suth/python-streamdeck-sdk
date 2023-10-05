@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import json
 
 import pydantic
+import typing
 import websockets
 import logging
 
@@ -9,6 +12,13 @@ from .logger import log_errors_async
 from .sd_objs import events_received_objs, events_sent_objs
 
 logger = logging.getLogger()
+
+if typing.TYPE_CHECKING:
+	from . import StreamDeck
+
+
+class StreamDeckMixin:
+	sd: StreamDeck|None
 
 
 class SendMixin:
@@ -211,7 +221,7 @@ class ActionEventsSendMixin(BaseEventSendMixin):
 		await self.send(message)
 
 
-class BaseEventHandlerMixin:
+class BaseEventHandlerMixin(StreamDeckMixin):
 	pass
 
 
