@@ -365,8 +365,12 @@ class ExtraKeyEventHandlersMixin(ActionEventHandlersMixin):
 		# Intercept the normal KeyDown event, and start timing.
 		context = obj.context
 		loop = asyncio.get_running_loop()
-		time_start = loop.time()
 
+		# Perform the OnKeyDown event now, in case the plugin
+		# wants to handle it.
+		self.sd.schedule_task_soon(self.on_key_down(obj=obj))
+
+		time_start = loop.time()
 		if self.long_press_delay > 0:
 			while True:
 				# Check back every 100ms.
