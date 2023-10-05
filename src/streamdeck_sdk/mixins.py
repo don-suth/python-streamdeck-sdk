@@ -71,6 +71,7 @@ class PluginEventsSendMixin(BaseEventSendMixin):
 
 	async def get_global_settings(self) -> None:
 		"""Get the global settings.
+		The Streamdeck software will respond with the on_did_receive_global_settings event.
 		"""
 		message = events_sent_objs.GetGlobalSettings(
 			context=self.plugin_uuid,
@@ -115,6 +116,13 @@ class ActionEventsSendMixin(BaseEventSendMixin):
 			context: str,
 			payload: dict,
 			) -> None:
+		"""Sets the local context settings.
+
+		Args:
+			context: The local context.
+			payload: The settings to use.
+
+		"""
 		message = events_sent_objs.SetSettings(
 			context=context,
 			payload=payload,
@@ -125,6 +133,12 @@ class ActionEventsSendMixin(BaseEventSendMixin):
 			self,
 			context: str,
 			) -> None:
+		"""Get the local context settings.
+		The Streamdeck software will respond with the on_did_receive_settings event.
+
+		Args:
+			context: The local context.
+		"""
 		message = events_sent_objs.GetSettings(
 			context=context,
 			)
