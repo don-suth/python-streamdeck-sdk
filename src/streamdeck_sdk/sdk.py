@@ -4,6 +4,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Callable, Coroutine
+from collections import defaultdict
 
 import pydantic
 import websockets
@@ -11,7 +12,7 @@ import websockets
 from . import event_routings
 from . import mixins
 from .logger import init_root_logger, log_errors_async, rename_plugin_logger
-from .sd_objs import registration_objs
+from .sd_objs import registration_objs, events_received_objs
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,8 @@ class StreamDeck(Base):
 		self.info: Optional[registration_objs.Info] = None
 		self.registration_dict: Optional[dict] = None
 		self.active_tasks: set[asyncio.Task] = set()
+		self.global_settings: dict = dict()
+		self.instance_settings: defaultdict[str, dict] = defaultdict(dict)
 
 	@log_errors_async
 	async def run(self) -> None:
@@ -269,3 +272,16 @@ class StreamDeck(Base):
 		self.active_tasks.add(task)
 		task.add_done_callback(self.active_tasks.discard)
 		return task
+
+	async def _on_did_receive_global_settings(self, obj: events_received_objs.DidReceiveGlobalSettings) -> None:
+		"""Update the local copy of the global settings."""
+		self.global_settings.update(obj.payload.settings)
+		await self.on_did_receive_global_settings(obj=obj)
+
+	async def _on_did_receive_settings(self, obj: events_received_objs.DidReceiveSettings) -> None:
+		"""Update the local copy of the context settings, and the settings of that action object."""
+		action = obj.action
+		context = obj.context
+		self.instance_settings[context].update(obj.payload.settings)
+		self.registered_actions[action].instance_settings[context].update(obj.payload.settings)
+		await self.on_did_receive_settings(obj=obj)
